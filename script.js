@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalDuration = endMinutes - startMinutes;
         // memo.md の指定式をそのまま適用
         const newCumulativeOvertimeMinutes =
-            cumulativeOvertimeUntilYesterday - totalDuration - STANDARD_WORK_MINUTES - breakMinutes;
+            cumulativeOvertimeUntilYesterday + totalDuration - STANDARD_WORK_MINUTES - breakMinutes;
 
         totalCumulativeOvertime.textContent = formatMinutesAsJapanese(newCumulativeOvertimeMinutes);
     }
