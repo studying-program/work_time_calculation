@@ -87,13 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const decimalHours = (totalWorkMinutes / MINUTES_PER_HOUR).toFixed(2);
         resultDecimalHours.textContent = `${decimalHours}時間`;
 
-        // Calculate today's overtime
-        let todayOvertimeMinutes = Math.max(0, totalWorkMinutes); // If totalWorkMinutes is negative, today's overtime is 0
+        // Calculate today's overtime/shortage
+        let todayOvertimeMinutes = totalWorkMinutes; // Can be negative for shortage
 
         // Get cumulative overtime from input
         let cumulativeOvertimeUntilYesterday = parseInt(cumulativeOvertimeInput.value, 10);
-        if (isNaN(cumulativeOvertimeUntilYesterday) || cumulativeOvertimeUntilYesterday < 0) {
-            errorMessage.textContent = '前日までの累積残業時間は0以上の数字を入力してください。';
+        if (isNaN(cumulativeOvertimeUntilYesterday)) { // Allow negative for cumulative
+            errorMessage.textContent = '前日までの累積残業時間は数字を入力してください。';
             todayOvertime.textContent = '--時間 --分';
             totalCumulativeOvertime.textContent = '--時間 --分';
             return;
@@ -102,10 +102,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate total cumulative overtime
         let totalCumulativeOvertimeMinutes = cumulativeOvertimeUntilYesterday + todayOvertimeMinutes;
 
-        // Display today's overtime
-        const todayOvertimeHours = Math.floor(todayOvertimeMinutes / MINUTES_PER_HOUR);
-        const todayOvertimeMins = todayOvertimeMinutes % MINUTES_PER_HOUR;
-        todayOvertime.textContent = `${todayOvertimeHours}時間 ${todayOvertimeMins}分`;
+        // Display today's overtime/shortage
+        const displayTodayOvertimeHours = Math.floor(Math.abs(todayOvertimeMinutes) / MINUTES_PER_HOUR);
+        const displayTodayOvertimeMins = Math.abs(todayOvertimeMinutes) % MINUTES_PER_HOUR;
+        const todayOvertimeSign = todayOvertimeMinutes < 0 ? '-' : '';
+        todayOvertime.textContent = `${todayOvertimeSign}${displayTodayOvertimeHours}時間 ${displayTodayOvertimeMins}分`;
 
         // Display total cumulative overtime
         const totalCumulativeOvertimeHours = Math.floor(totalCumulativeOvertimeMinutes / MINUTES_PER_HOUR);
