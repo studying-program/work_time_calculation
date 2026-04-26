@@ -109,8 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
         todayOvertime.textContent = `${todayOvertimeSign}${displayTodayOvertimeHours}時間 ${displayTodayOvertimeMins}分`;
 
         // Display total cumulative overtime
-        const totalCumulativeOvertimeHours = Math.floor(totalCumulativeOvertimeMinutes / MINUTES_PER_HOUR);
-        const totalCumulativeOvertimeMins = totalCumulativeOvertimeMinutes % MINUTES_PER_HOUR;
-        totalCumulativeOvertime.textContent = `${totalCumulativeOvertimeHours}時間 ${totalCumulativeOvertimeMins}分`;
+        const displayTotalCumulativeOvertimeHours = Math.floor(Math.abs(totalCumulativeOvertimeMinutes) / MINUTES_PER_HOUR);
+        const displayTotalCumulativeOvertimeMins = Math.abs(totalCumulativeOvertimeMinutes) % MINUTES_PER_HOUR;
+        const totalCumulativeOvertimeSign = totalCumulativeOvertimeMinutes < 0 ? '-' : '';
+        totalCumulativeOvertime.textContent = `${totalCumulativeOvertimeSign}${displayTotalCumulativeOvertimeHours}時間 ${displayTotalCumulativeOvertimeMins}分`;
     });
 });
