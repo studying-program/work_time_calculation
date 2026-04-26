@@ -4,16 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const breakTimeInput = document.getElementById('breakTime');
     const calculateButton = document.getElementById('calculateButton');
     const errorMessage = document.getElementById('errorMessage');
-    const resultHoursMinutes = document.getElementById('resultHoursMinutes');
-    const resultDecimalHours = document.getElementById('resultDecimalHours');
     const cumulativeOvertimeInput = document.getElementById('cumulativeOvertime');
-    const todayOvertime = document.getElementById('todayOvertime');
     const totalCumulativeOvertime = document.getElementById('totalCumulativeOvertime');
 
     // Constants for time calculations
     const MINUTES_PER_HOUR = 60;
     const HOURS_PER_DAY = 24;
-    const EIGHT_HOURS_IN_MINUTES = 8 * MINUTES_PER_HOUR;
+    const EIGHT_HOURS_IN_MINUTES = 8 * MINUTES_PER_HOUR; // 8 hours in minutes
 
     // Function to parse 4-digit time string (HHMM) into total minutes from midnight
     function parseTime(timeString) {
@@ -29,8 +26,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return hours * MINUTES_PER_HOUR + minutes;
     }
 
-    // Function to validate time input (last two digits < 60)
-    function validateTimeInput(timeString) {
+    // New function to parse 4-digit string (HHMM) into total minutes (for break/cumulative)
+    function parseFourDigitMinutes(timeString) {
+        if (!/^\d{4}$/.test(timeString)) {
+            return null; // Invalid format
+        }
+        const hours = parseInt(timeString.substring(0, 2), 10);
+        const minutes = parseInt(timeString.substring(2, 4), 10);
+
+        if (minutes >= MINUTES_PER_HOUR) { // Only minutes validation needed for this context
+            return null; // Invalid minutes
+        }
+        return hours * MINUTES_PER_HOUR + minutes;
+    }
+
+    // Function to validate 4-digit time input (last two digits < 60)
+    function validateFourDigitInput(timeString) {
         if (!/^\d{4}$/.test(timeString)) {
             return false; // Not a 4-digit number
         }
@@ -40,31 +51,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     calculateButton.addEventListener('click', () => {
         errorMessage.textContent = ''; // Clear previous errors
-        resultHoursMinutes.textContent = '--時間 --分';
-        resultDecimalHours.textContent = '--.--時間';
+        totalCumulativeOvertime.textContent = '--時間 --分'; // Clear previous result
 
         const startTimeStr = startTimeInput.value;
         const endTimeStr = endTimeInput.value;
         const breakTimeStr = breakTimeInput.value;
+        const cumulativeOvertimeStr = cumulativeOvertimeInput.value;
 
-        // Validate time formats
-        if (!validateTimeInput(startTimeStr) || !validateTimeInput(endTimeStr)) {
-            errorMessage.textContent = '開始時刻または終了時刻の分が60以上です。正しい時刻を入力してください (例: 0959)。';
+        // Validate all 4-digit inputs
+        if (!validateFourDigitInput(startTimeStr)) {
+            errorMessage.textContent = '開始時刻の形式が不正です (例: 0959)。';
+            return;
+        }
+        if (!validateFourDigitInput(endTimeStr)) {
+            errorMessage.textContent = '終了時刻の形式が不正です (例: 0959)。';
+            return;
+        }
+        if (!validateFourDigitInput(breakTimeStr)) {
+            errorMessage.textContent = '休憩時間の形式が不正です (例: 0059)。';
+            return;
+        }
+        if (!validateFourDigitInput(cumulativeOvertimeStr)) {
+            errorMessage.textContent = '前日までの累積残業時間の形式が不正です (例: 0120)。';
             return;
         }
 
         let startMinutes = parseTime(startTimeStr);
         let endMinutes = parseTime(endTimeStr);
-        let breakMinutes = parseInt(breakTimeStr, 10);
+        let breakMinutes = parseFourDigitMinutes(breakTimeStr);
+        let cumulativeOvertimeUntilYesterday = parseFourDigitMinutes(cumulativeOvertimeStr);
 
-        // Basic input validation
-        if (startMinutes === null || endMinutes === null || isNaN(breakMinutes)) {
-            errorMessage.textContent = '入力形式が正しくありません。時刻は4桁の数字 (例: 0900)、休憩時間は数字で入力してください。';
+        // Basic input validation (null means parsing failed due to invalid hours/minutes)
+        if (startMinutes === null) {
+            errorMessage.textContent = '開始時刻の時または分が不正です。';
             return;
         }
-
-        if (breakMinutes < 0) {
-            errorMessage.textContent = '休憩時間は0以上の数字を入力してください。';
+        if (endMinutes === null) {
+            errorMessage.textContent = '終了時刻の時または分が不正です。';
+            return;
+        }
+        if (breakMinutes === null) {
+            errorMessage.textContent = '休憩時間の時または分が不正です。';
+            return;
+        }
+        if (cumulativeOvertimeUntilYesterday === null) {
+            errorMessage.textContent = '前日までの累積残業時間の時または分が不正です。';
             return;
         }
 
@@ -73,45 +104,15 @@ document.addEventListener('DOMContentLoaded', () => {
             endMinutes += HOURS_PER_DAY * MINUTES_PER_HOUR; // Add 24 hours
         }
 
-        // Calculate total working minutes (excluding break)
-        let totalWorkMinutes = (endMinutes - startMinutes) - breakMinutes;
-
-        // Subtract 8 hours (480 minutes) from the total working minutes
-        totalWorkMinutes -= EIGHT_HOURS_IN_MINUTES;
-
-        // Display results
-        const hours = Math.floor(totalWorkMinutes / MINUTES_PER_HOUR);
-        const minutes = totalWorkMinutes % MINUTES_PER_HOUR;
-        resultHoursMinutes.textContent = `${hours}時間 ${minutes}分`;
-
-        const decimalHours = (totalWorkMinutes / MINUTES_PER_HOUR).toFixed(2);
-        resultDecimalHours.textContent = `${decimalHours}時間`;
-
-        // Calculate today's overtime/shortage
-        let todayOvertimeMinutes = totalWorkMinutes; // Can be negative for shortage
-
-        // Get cumulative overtime from input
-        let cumulativeOvertimeUntilYesterday = parseInt(cumulativeOvertimeInput.value, 10);
-        if (isNaN(cumulativeOvertimeUntilYesterday)) { // Allow negative for cumulative
-            errorMessage.textContent = '前日までの累積残業時間は数字を入力してください。';
-            todayOvertime.textContent = '--時間 --分';
-            totalCumulativeOvertime.textContent = '--時間 --分';
-            return;
-        }
-
-        // Calculate total cumulative overtime
-        let totalCumulativeOvertimeMinutes = cumulativeOvertimeUntilYesterday + todayOvertimeMinutes;
-
-        // Display today's overtime/shortage
-        const displayTodayOvertimeHours = Math.floor(Math.abs(todayOvertimeMinutes) / MINUTES_PER_HOUR);
-        const displayTodayOvertimeMins = Math.abs(todayOvertimeMinutes) % MINUTES_PER_HOUR;
-        const todayOvertimeSign = todayOvertimeMinutes < 0 ? '-' : '';
-        todayOvertime.textContent = `${todayOvertimeSign}${displayTodayOvertimeHours}時間 ${displayTodayOvertimeMins}分`;
+        // Implement the exact formula from the prompt:
+        // 累積残業時間 = 前日まで累積残業時間 - (終了時刻 - 開始時刻) - 勤務時間（8時間） - 休憩時間
+        let totalDuration = endMinutes - startMinutes;
+        let newCumulativeOvertimeMinutes = cumulativeOvertimeUntilYesterday - totalDuration - EIGHT_HOURS_IN_MINUTES - breakMinutes;
 
         // Display total cumulative overtime
-        const displayTotalCumulativeOvertimeHours = Math.floor(Math.abs(totalCumulativeOvertimeMinutes) / MINUTES_PER_HOUR);
-        const displayTotalCumulativeOvertimeMins = Math.abs(totalCumulativeOvertimeMinutes) % MINUTES_PER_HOUR;
-        const totalCumulativeOvertimeSign = totalCumulativeOvertimeMinutes < 0 ? '-' : '';
+        const displayTotalCumulativeOvertimeHours = Math.floor(Math.abs(newCumulativeOvertimeMinutes) / MINUTES_PER_HOUR);
+        const displayTotalCumulativeOvertimeMins = Math.abs(newCumulativeOvertimeMinutes) % MINUTES_PER_HOUR;
+        const totalCumulativeOvertimeSign = newCumulativeOvertimeMinutes < 0 ? '-' : '';
         totalCumulativeOvertime.textContent = `${totalCumulativeOvertimeSign}${displayTotalCumulativeOvertimeHours}時間 ${displayTotalCumulativeOvertimeMins}分`;
     });
 });
