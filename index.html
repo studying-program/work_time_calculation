@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="background-overlay"></div>
     <div class="container">
         <h1>勤務時間計算</h1>
         <div class="input-card">
@@ -26,8 +27,8 @@
                 <label for="cumulativeOvertime">前日までの累積残業時間 (例: 0120)</label>
                 <input type="text" id="cumulativeOvertime" maxlength="4" placeholder="0120">
             </div>
-            <button id="calculateButton">計算</button>
-            <div id="errorMessage" class="error-message"></div>
+            <button id="calculateButton" type="button">計算</button>
+            <div id="errorMessage" class="error-message" role="alert" aria-live="polite"></div>
             <div class="results">
                 <p>累積残業時間: <span id="totalCumulativeOvertime">--時間 --分</span></p>
             </div>
